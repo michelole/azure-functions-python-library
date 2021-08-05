@@ -1,7 +1,7 @@
-import typing
 from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum
 import json
+from typing import Dict, List, Union
 
 
 class StringifyEnum(Enum):
@@ -199,22 +199,34 @@ class BlobTrigger(Trigger):
         }
 
 
+class DummyTrigger(Trigger):
+    @staticmethod
+    def get_binding_name():
+        return "Dummy"
+
+    def get_dict_repr(self):
+        return {"dummy": "trigger"}
+
+    def __init__(self):
+        super(DummyTrigger, self).__init__(name="Dummy")
+
+
 class Function(object):
     def __init__(self, func, script_file=None):
         self._script_file = script_file or "dummy"
         self._func = func
-        self._trigger: typing.Optional[Trigger] = None
-        self._bindings: typing.List[Binding] = []
+        self._trigger: Trigger = DummyTrigger()
+        self._bindings: List[Binding] = []
 
     def add_binding(self, binding: Binding):
         self._bindings.append(binding)
 
     def add_trigger(self, trigger: Trigger):
         if self._trigger:
-            raise ValueError("A trigger was already registered to this function"
-                             ". Adding another trigger is not the correct "
-                             "behavior as a function can only have one trigger."
-                             f" New trigger being added {trigger}")
+            raise ValueError("A trigger was already registered to this "
+                             "function. Adding another trigger is not the "
+                             "correct behavior as a function can only have one"
+                             f" trigger. New trigger being added {trigger}")
         self._trigger = trigger
 
     def get_trigger(self):
@@ -224,7 +236,8 @@ class Function(object):
         return self._bindings
 
     def get_dict_repr(self):
-        stub_f_json = {"scriptFile": self._script_file, "bindings": []}
+        stub_f_json: Dict[str, Union[List[str], str]] = {
+            "scriptFile": self._script_file, "bindings": []}
         stub_f_json["bindings"].append(self._trigger.get_dict_repr())
         for b in self._bindings:
             stub_f_json["bindings"].append(b.get_dict_repr())
@@ -277,7 +290,7 @@ class FunctionsApp(Scaffold):
     def __init__(self, script_file):
         super().__init__(script_file)
 
-    def get_functions(self) -> typing.List[Function]:
+    def get_functions(self) -> List[Function]:
         return self.functions
 
     def blob_output(self, name: str, connection: str, path: str,
