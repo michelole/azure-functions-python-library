@@ -17,6 +17,11 @@ from .meta import get_binding_registry
 from .extension import (ExtensionMeta, FunctionExtensionException,
                         FuncExtensionBase, AppExtensionBase)
 
+# Decorator imports
+from ._decorators import BlobInput, BlobOutput, BlobDataType, \
+    EventHubTrigger, FunctionsApp, HttpTrigger, HttpMethod, Http
+
+
 # Import binding implementations to register them
 from . import blob  # NoQA
 from . import cosmosdb  # NoQA
@@ -64,7 +69,17 @@ __all__ = (
     'AppExtensionBase',
     'FuncExtensionBase',
     'ExtensionMeta',
-    'FunctionExtensionException'
+    'FunctionExtensionException',
+
+    # Decorators
+    'BlobInput',
+    'BlobOutput',
+    'BlobDataType',
+    'EventHubTrigger',
+    'FunctionsApp',
+    'HttpTrigger',
+    'HttpMethod',
+    'Http'
 )
 
 __version__ = '1.7.2'
