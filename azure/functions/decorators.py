@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
+
 import json
 from typing import Dict, List, Union
 
@@ -84,9 +85,9 @@ class BlobOutput(OutputBinding):
 
     def __init__(self, name: str, connection: str, path: str,
                  data_type: DataType):
-        self.connection = connection
-        self.path = path
-        self.data_type = data_type
+        self.connection: str = connection
+        self.path: str = path
+        self.data_type: str = data_type.name.lower()
         super().__init__(name=name)
 
     def get_dict_repr(self):
@@ -105,10 +106,11 @@ class BlobInput(InputBinding):
     def get_binding_name():
         return "blob"
 
-    def __init__(self, name: str, connection: str, path: str, data_type: str):
-        self.connection = connection
-        self.path = path
-        self.data_type = data_type
+    def __init__(self, name: str, connection: str,
+                 path: str, data_type: DataType):
+        self.connection: str = connection
+        self.path: str = path
+        self.data_type: str = data_type.name.lower()
         super().__init__(name=name)
 
     def get_dict_repr(self):
@@ -151,7 +153,7 @@ class Function(object):
         self._trigger: Trigger = DummyTrigger()
         self._bindings: List[Binding] = []
 
-        self.script_file = script_file or "dummy"
+        self.function_script_file = script_file or "dummy"
 
     def add_binding(self, binding: Binding):
         self._bindings.append(binding)
@@ -163,6 +165,9 @@ class Function(object):
                              "correct behavior as a function can only have one"
                              f" trigger. New trigger being added {trigger}")
         self._trigger = trigger
+
+        #  We still add the trigger info to the bindings to ensure that
+        #  function.json is complete
         self._bindings.append(trigger)
 
     def get_trigger(self):
@@ -171,12 +176,17 @@ class Function(object):
     def get_bindings(self):
         return self._bindings
 
+    def get_bindings_dict(self):
+        stub_bindings_f_json: Dict[str, List[Dict]] = {"bindings": []}
+        for b in self._bindings:
+            stub_bindings_f_json["bindings"].append(b.get_dict_repr())
+        return stub_bindings_f_json
+
     def get_dict_repr(self):
         stub_f_json: Dict[str, Union[List[str], str]] = {
-            "scriptFile": self.script_file, "bindings": []}
-        for b in self._bindings:
-            stub_f_json["bindings"].append(b.get_dict_repr())  # NoQA
-
+            "scriptFile": self.function_script_file
+        }
+        stub_f_json.update(self.get_bindings_dict())  # NoQA
         return stub_f_json
 
     def get_user_function(self):
@@ -190,35 +200,34 @@ class Function(object):
 
 
 class FunctionsApp(Scaffold):
-    def __init__(self, script_file):
-        self.functions = []
-        super().__init__(script_file)
+    def __init__(self, app_script_file):
+        self._functions: List[Function] = []
+        super().__init__(app_script_file)
 
     def get_functions(self) -> List[Function]:
-        return self.functions
+        return self._functions
+
+    def _validate_type(self, func):
+        if isinstance(func, Function):
+            f = self._functions.pop()
+        elif callable(func):
+            f = Function(func, self.app_script_file)
+        else:
+            raise ValueError("WTF Trigger!")
+        return f
 
     def on_trigger(self, trigger: Trigger, *args, **kwargs):
         def decorator(func, *args, **kwargs):
-            if isinstance(func, Function):
-                f = self.functions.pop()
-            elif callable(func):
-                f = Function(func, self.script_file)
-            else:
-                raise ValueError("WTF Trigger!")
+            f = self._validate_type(func)
             f.add_trigger(trigger)
-            self.functions.append(f)
+            self._functions.append(f)
             return f
         return decorator
 
-    def binding(self, binding: Binding = None, *args, **kwargs):
+    def binding(self, binding: Binding, *args, **kwargs):
         def decorator(func, *args, **kwargs):
-            if isinstance(func, Function):
-                f = self.functions.pop()
-            elif callable(func):
-                f = Function(func, self.script_file)
-            else:
-                raise ValueError("WTF Binding!")
+            f = self._validate_type(func)
             f.add_binding(binding=binding)
-            self.functions.append(f)
+            self._functions.append(f)
             return f
         return decorator

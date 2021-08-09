@@ -3,7 +3,6 @@
 
 from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum
-import json
 from typing import Dict, List, Union
 
 
@@ -33,20 +32,20 @@ class Binding(ABC):
 
     def __init__(self, name: str,
                  direction: BindingDirection,
-                 data_type: DataType = DataType.UNDEFINED) -> None:
-        self.direction = direction
-        self.type = self.get_binding_name()
-        self.data_type: DataType = data_type
-        self.name = name
+                 data_type: DataType = DataType.UNDEFINED):
+        self.direction: int = direction.value
+        self.type: str = self.get_binding_name()
+        self.data_type: int = data_type.value
+        self.name: str = name
 
     @abstractmethod
     def get_dict_repr(self):
         pass
 
-    def get_binding_direction(self):
+    def get_binding_direction(self) -> str:
         return str(self.direction)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.get_dict_repr())
 
 
@@ -71,24 +70,24 @@ class OutputBinding(Binding, metaclass=ABCMeta):
 
 class DummyTrigger(Trigger):
     @staticmethod
-    def get_binding_name():
+    def get_binding_name() -> str:
         return "Dummy"
 
-    def get_dict_repr(self):
+    def get_dict_repr(self) -> Dict[str, str]:
         return {"dummy": "trigger"}
 
     def __init__(self):
         super(DummyTrigger, self).__init__(name="Dummy")
 
 
-class Scaffold(object, metaclass=ABCMeta):
-    def __init__(self, script_file=None):
-            self.script_file = script_file or "dummy"
+class Scaffold(ABC):
+    def __init__(self, app_script_file="app_file"):
+        self.app_script_file = app_script_file
 
     @abstractmethod
     def on_trigger(self, trigger: Trigger, *args, **kwargs):
         pass
 
     @abstractmethod
-    def binding(self, binding: Binding = None, *args, **kwargs):
+    def binding(self, binding: Binding, *args, **kwargs):
         pass
