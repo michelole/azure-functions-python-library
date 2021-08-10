@@ -149,6 +149,7 @@ class BlobTrigger(Trigger):
 
 class Function(object):
     def __init__(self, func, script_file=None):
+        self._name = func.__name__
         self._func = func
         self._trigger: Trigger = DummyTrigger()
         self._bindings: List[Binding] = []
@@ -169,6 +170,10 @@ class Function(object):
         #  We still add the trigger info to the bindings to ensure that
         #  function.json is complete
         self._bindings.append(trigger)
+
+    def set_function_name(self, function_name: str = None):
+        if function_name:
+            self._name = function_name
 
     def get_trigger(self):
         return self._trigger
@@ -191,6 +196,9 @@ class Function(object):
 
     def get_user_function(self):
         return self._func
+    
+    def get_function_name(self):
+        return self._name
 
     def get_function_json(self):
         return json.dumps(self.get_dict_repr())
@@ -216,10 +224,11 @@ class FunctionsApp(Scaffold):
             raise ValueError("WTF Trigger!")
         return f
 
-    def on_trigger(self, trigger: Trigger, *args, **kwargs):
+    def on_trigger(self, trigger: Trigger, function_name: str = None, *args, **kwargs):
         def decorator(func, *args, **kwargs):
             f = self._validate_type(func)
             f.add_trigger(trigger)
+            f.set_function_name(function_name)
             self._functions.append(f)
             return f
         return decorator

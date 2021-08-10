@@ -85,7 +85,7 @@ class Scaffold(ABC):
         self.app_script_file = app_script_file
 
     @abstractmethod
-    def on_trigger(self, trigger: Trigger, *args, **kwargs):
+    def on_trigger(self, trigger: Trigger, function_name: str, *args, **kwargs):
         pass
 
     @abstractmethod
